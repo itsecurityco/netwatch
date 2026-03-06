@@ -1,0 +1,6 @@
+# Required on Windows
+psutil>=5.9.0
+windows-curses>=2.3.0
+
+# Optional (better YAML config support)
+PyYAML>=6.0
