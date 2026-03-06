@@ -1,8 +1,8 @@
 # Netwatch
 
-Real-time terminal dashboard for monitoring per-process network connections on macOS. Combines `nettop` (byte counts) with `lsof` (full connection discovery) and resolves hostnames via DNS and whois lookups.
+Real-time terminal dashboard for monitoring per-process network connections on **macOS**, **Linux**, and **Windows**. Uses platform-specific tools to discover connections and byte counts, resolves hostnames via DNS and whois lookups.
 
-<img width="1291" height="592" alt="image" src="https://github.com/user-attachments/assets/b3071f1c-74f5-44eb-bf26-56343748bc65" />
+<img width="1291" height="592" alt="image" src="netwatch.png" />
 
 ## Features
 
@@ -16,20 +16,26 @@ Real-time terminal dashboard for monitoring per-process network connections on m
 
 ## Requirements
 
-- macOS (uses `nettop`, `lsof`, `ipconfig`)
-- Python 3.10+
+- Python 3.9+
+- **macOS** — no extra dependencies (uses `nettop`, `lsof`, `ipconfig`)
+- **Linux** — `psutil` (`pip install psutil`), root/sudo for full process visibility
+- **Windows** — `psutil` + `windows-curses` (`pip install psutil windows-curses`), Administrator terminal
+
+See [LINUX.md](LINUX.md) and [WINDOWS.md](WINDOWS.md) for platform-specific setup details.
 
 ## Usage
 
 ```bash
-# Default interface (en0)
+# macOS (default interface: en0)
 python3 netwatch.py
-
-# Via module
 python3 -m netwatch
+python3 netwatch.py en1        # custom interface
 
-# Custom interface
-python3 netwatch.py en1
+# Linux (default interface: eth0)
+sudo python3 -m netwatch
+
+# Windows (run as Administrator)
+python -m netwatch
 ```
 
 ### Keyboard Controls
@@ -59,7 +65,10 @@ netwatch/
   domain/
     entities.py             Connection + TrafficRow dataclasses
   services/
-    traffic_collector.py    nettop/lsof parsing, endpoint parsing
+    traffic_collector.py    Cross-platform dispatcher + shared utilities
+    _collector_macos.py     macOS: nettop + lsof + ps
+    _collector_linux.py     Linux: psutil + /proc
+    _collector_windows.py   Windows: psutil + io_counters
     resolver.py             Async DNS + whois resolution
     aggregator.py           Row grouping, sorting, human_bytes, RowTracker
     history.py              Connection fingerprint + NEW/SEEN tracking
@@ -76,15 +85,15 @@ tests/
 ### Data Flow
 
 ```
-  nettop ──> byte counts ──┐
-                            ├──> merge ──> aggregate ──> enrich ──> sort ──> display
-  lsof ───> connections ───┘       |           |           |                   |
-                                   |       DNS/whois   history             curses
-                              ProcessName   (async)    (NEW/SEEN)         renderer
-                                cache
+  macOS:  nettop + lsof ────┐
+  Linux:  psutil + /proc ───┼──> aggregate ──> enrich ──> sort ──> display
+  Windows: psutil ──────────┘        |           |                   |
+                                 DNS/whois    history             curses
+                                ProcessName   (NEW/SEEN)         renderer
+                                  cache
 ```
 
-1. **Collect** -- `traffic_collector` runs `nettop` (active flows with byte counts) and `lsof` (all established connections), merging them into a unified `Connection` list.
+1. **Collect** -- Platform-specific collector gathers connections and byte counts into a unified `Connection` list (nettop+lsof on macOS, psutil+/proc on Linux, psutil on Windows).
 2. **Aggregate** -- `aggregator` groups connections by (process, remote addr, port, proto) into `TrafficRow` objects, resolving display names via async DNS with whois fallback.
 3. **Enrich** -- Each row gets a NEW/SEEN status from `ConnectionHistory` fingerprint tracking.
 4. **Track** -- `RowTracker` keeps disappeared connections visible for 24 hours, marking them stale.
