@@ -118,3 +118,4 @@ python3 -m pytest tests/ -v
 ```
 
 Tests cover all pure logic with zero mocking: entities, endpoint parsing, whois parsing, display name formatting, exclusion matching, byte formatting, sorting, connection history, keyboard handling, config loading, and SQLite round-trips.
+
