@@ -2,7 +2,7 @@
 
 Real-time terminal dashboard for monitoring per-process network connections on macOS. Combines `nettop` (byte counts) with `lsof` (full connection discovery) and resolves hostnames via DNS and whois lookups.
 
-<img width="1291" height="592" alt="image" src="https://github.com/user-attachments/assets/b3071f1c-74f5-44eb-bf26-56343748bc65" />
+<img width="1291" height="592" alt="image" src="netwatch.png" />
 
 ## Features
 
@@ -109,3 +109,4 @@ python3 -m pytest tests/ -v
 ```
 
 Tests cover all pure logic with zero mocking: entities, endpoint parsing, whois parsing, display name formatting, exclusion matching, byte formatting, sorting, connection history, keyboard handling, config loading, and SQLite round-trips.
+
